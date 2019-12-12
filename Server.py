@@ -247,16 +247,15 @@ while True:
         for key in clients:
             if clients[key]["token"] == rawData["token"] and clients[key]["status"] == "online":
                 clients[key]["time"] = time.time()
-                print(clients[key]["subscriptions"])
                 for sub in clients[key]["subscriptions"]:
 
-                    i = 1
                     n = int(f.decrypt(rawData["payload"]))
-                    print(sub)
-                    print(i)
-                    print(n)
+                    start = len(clients[sub]["posts"]) - n
+                    i = 0
                     for post in clients[sub]["posts"]:
-                        print(post)
+                        if i < start:
+                            i += 1
+                            pass
                         if i > n:
                             break
                         else:
@@ -286,7 +285,7 @@ while True:
             if clients[key]["token"] == rawData["token"] and clients[key]["status"] == "online":
                 __location__ = os.path.realpath(
                     os.path.join(os.getcwd(), os.path.dirname(__file__)))
-                file = open(os.path.join(__location__, "cpy" + f.decrypt(rawData["payload"])), 'wb')
+                file = open(os.path.join(__location__, f.decrypt(rawData["payload"])), 'wb')
 
 
                 booler = True
@@ -318,13 +317,13 @@ while True:
                                     currKey = keyDict[hashKey]
                                     f1 = Fernet(currKey)
                             packet = {"MAGIC_1": MAGIC_1, "MAGIC_2": MAGIC_2, "mType": "file#forward", "token": token,
-                                      "payload": f1.encrypt(f.decrypt(rawData["payload"]))}
+                                      "payload": f1.encrypt(key + "&" + f.decrypt(rawData["payload"]))}
 
                             ret = sock.sendto(pickle.dumps(packet), clients[client]["address"])
 
                             __location__ = os.path.realpath(
                                 os.path.join(os.getcwd(), os.path.dirname(__file__)))
-                            file = open(os.path.join(__location__, "cpy" + f.decrypt(rawData["payload"])), "rb");
+                            file = open(os.path.join(__location__, f.decrypt(rawData["payload"])), "rb");
                             data = file.read(1024)
                             while (data):
                                 print("theres data and we send")

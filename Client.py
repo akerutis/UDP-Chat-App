@@ -5,6 +5,7 @@ import pickle
 import threading
 import sys
 import math
+from PIL import ImageTk, Image
 import os
 import base64
 from cryptography.fernet import Fernet
@@ -12,6 +13,43 @@ from Crypto.Util import number
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
+import tkinter
+uInput = None
+photoDict = {}
+def send(event=None):
+    global uInput
+    uInput=my_msg.get()
+    my_msg.set("")
+
+
+def on_closing(event=None):
+    top.quit()
+
+top = tkinter.Tk()
+top.title("Chat")
+messages_frame = tkinter.Frame(top)
+my_msg = tkinter.StringVar()
+scrollbar = tkinter.Scrollbar(messages_frame)
+msg_list = tkinter.Listbox(messages_frame, height=30, width=100, yscrollcommand=scrollbar.set)
+scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+msg_list.pack()
+img = tkinter.Label()
+img.pack()
+def list_entry_clicked(*ignore):
+    imgname=msg_list.get(msg_list.curselection()[0])
+    img.config(image=photoDict[imgname])
+msg_list.bind('<ButtonRelease-1>', list_entry_clicked)
+messages_frame.pack()
+
+entry_field = tkinter.Entry(top, textvariable=my_msg, width=80)
+entry_field.bind("<Return>", send)
+entry_field.pack()
+send_button = tkinter.Button(top, text="Send", command=send)
+send_button.pack()
+
+top.protocol("WM_DELETE_WINDOW", on_closing)
+
 
 def generate_partial_key(Pkey1, Pkey2, Prkey1):
     partial_key = Pkey1 ** Prkey1
@@ -25,7 +63,6 @@ def generate_full_key(partial_key_r, PrKey1, PKey2):
     return full_key
 
 
-uInput = None
 
 def main():
     MAGIC_1 = 'A'
@@ -42,6 +79,9 @@ def main():
     Hpartial= None
     Cpartial = None
     full_key = None
+
+
+
 
     packet = {"MAGIC_1": MAGIC_1, "MAGIC_2": MAGIC_2, "mType": "getPublicKey", "token": token, "payload": Cpublic}
     ret = sock.sendto(pickle.dumps(packet), ('localhost', 10020))
@@ -110,10 +150,10 @@ def main():
                         if rawData["mType"] == "login_success":
                             token = rawData["token"]
                             print(token)
-                            print("login_ack#success")
+                            msg_list.insert(tkinter.END, "login_ack#success")
                             status="online"
                         elif rawData["mType"] == "login_fail":
-                            print("login_ack#failed")
+                            msg_list.insert(tkinter.END,"login_ack#failed")
                         booler=False
                     except:
                         pass
@@ -129,12 +169,12 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "post#ack":
-                            print("post#ack")
+                            msg_list.insert(tkinter.END,"post#ack")
                         elif rawData["mType"] == "post#fail":
-                            print("error#post fail")
+                            msg_list.insert(tkinter.END,"error#post fail")
                         elif rawData["mType"] == "session#timeout":
                             status = "offline"
-                            print("must login first")
+                            msg_list.insert(tkinter.END, "Session timeout: must login again")
                         booler = False
                     except:
                         pass
@@ -147,10 +187,10 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "logout#ack":
-                            print("logout#ack")
+                            msg_list.insert(tkinter.END,"logout#ack")
                             status = "offline"
                         elif rawData["mType"] == "logout#fail":
-                            print("error logging out")
+                            msg_list.insert(tkinter.END, "error logging out")
 
                         booler = False
                     except:
@@ -166,12 +206,12 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "subscribe#ack":
-                            print("subscribe#ack")
+                            msg_list.insert(tkinter.END, "subscribe#ack")
                         elif rawData["mType"] == "subscribe#fail":
-                            print("subscribe#failure")
+                            msg_list.insert(tkinter.END, "subscribe#failure")
                         elif rawData["mType"] == "session#timeout":
                             status = "offline"
-                            print("must login first")
+                            msg_list.insert(tkinter.END, "Session timeout: must login again")
                         booler = False
                     except:
                         pass
@@ -186,12 +226,12 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "unsubscribe#ack":
-                            print("unsubscribe#ack")
+                            msg_list.insert(tkinter.END, "unsubscribe#ack")
                         elif rawData["mType"] == "unsubscribe#fail":
-                            print("unsubscribe#failure")
+                            msg_list.insert(tkinter.END, "unsubscribe#failure")
                         elif rawData["mType"] == "session#timeout":
                             status = "offline"
-                            print("must login first")
+                            msg_list.insert(tkinter.END,"Session timeout: must login again")
                         booler = False
                     except:
                         pass
@@ -212,14 +252,13 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "retrieve#ack":
-
-                            print(f.decrypt(rawData["payload"]))
+                            msg_list.insert(tkinter.END, f.decrypt(rawData["payload"]))
 
                         elif rawData["mType"] == "retrieve#fail":
-                            print("retrieve#failure")
+                            msg_list.insert(tkinter.END, "retrieve#failure")
                         elif rawData["mType"] == "session#timeout":
                             status = "offline"
-                            print("must log in first")
+                            msg_list.insert(tkinter.END, "Session timeout: must login again")
                         booler = False
                     except:
                         pass
@@ -234,9 +273,9 @@ def main():
                         data, server = sock.recvfrom(4096)
                         rawData = pickle.loads(data)
                         if rawData["mType"] == "spurious#ack":
-                            print("okay")
+                            msg_list.insert(tkinter.END, "okay")
                         elif rawData["mType"] == "session#reset":
-                            print("Error occurred session has been reset by server.")
+                            msg_list.insert(tkinter.END, "Error occurred session has been reset by server.")
                             status = "offline"
                         booler = False
                     except:
@@ -264,26 +303,26 @@ def main():
                 data, server = sock.recvfrom(4096)
                 rawData = pickle.loads(data)
                 if rawData["mType"] == "retrieve#ack":
-                    print(f.decrypt(rawData["payload"]))
+                    msg_list.insert(tkinter.END, f.decrypt(rawData["payload"]))
                 elif rawData["mType"] == "forward#message":
-                    print(f.decrypt(rawData["payload"]))
+                    msg_list.insert(tkinter.END, f.decrypt(rawData["payload"]))
                 elif rawData["mType"] == "forward#fail":
-                    print("forwarding#failure")
+                    msg_list.insert(tkinter.END, "forwarding#failure")
                 elif rawData["mType"] == "session#reset":
-                    print("Session reset triggered by server")
+                    msg_list.insert(tkinter.END, "Session reset triggered by server")
                     status = "offline"
                 elif rawData["mType"] == "session#timeout":
-                    print("timeout happened")
+                    msg_list.insert(tkinter.END, "timeout happened")
                     status = "offline"
                 elif rawData["mType"] == "file#forward":
                     __location__ = os.path.realpath(
                         os.path.join(os.getcwd(), os.path.dirname(__file__)))
-                    file = open(os.path.join(__location__, "dsy" + f.decrypt(rawData["payload"])), 'wb')
+                    username, fileName = f.decrypt(rawData["payload"]).split("&")
+                    file = open(os.path.join(__location__, fileName), 'wb')
 
                     booler = True
                     while (booler):
                         try:
-                            print("in here")
                             data, address = sock.recvfrom(4096)
                             booler = False
                         except:
@@ -296,14 +335,23 @@ def main():
                             data, address = sock.recvfrom(4096)
                     except:
                         pass
+                    print("before")
                     file.close()
+                    msg_list.insert(tkinter.END, "<{}> {}".format(username, fileName))
+                    path=(os.path.join(__location__,fileName))
+                    print(path)
+                    path.encode('unicode_escape')
+                    photo=ImageTk.PhotoImage(Image.open(path))
+                    photoDict["<{}> {}".format(username, fileName)]=photo
+                    print(photoDict)
+                    print("after")
                 else:
                     print(rawData)
                     packet = {"MAGIC_1": MAGIC_1, "MAGIC_2": MAGIC_2, "mType": "serverReset", "token": token,
                               "payload": None}
                     ret = sock.sendto(pickle.dumps(packet), ('localhost', 10020))
                     status = "offline"
-                    print("Session reset triggered by client")
+                    msg_list.insert(tkinter.END, "Session reset triggered by client")
 
 
             except:
@@ -315,8 +363,7 @@ t.daemon = True
 t.start()
 
 while True:
-    global uInput
-    uInput = raw_input("")
+    tkinter.mainloop()
 
 
 
