@@ -283,30 +283,25 @@ while True:
                 clients[key]["status"] = "offline"
                 clients[key]["token"] = None
     elif rawData["mType"] == "upload":
+        print("starting")
         for key in clients:
+            print("iterating")
             if clients[key]["token"] == rawData["token"] and clients[key]["status"] == "online":
                 __location__ = os.path.realpath(
                     os.path.join(os.getcwd(), os.path.dirname(__file__)))
                 file = open(os.path.join(__location__, f.decrypt(rawData["payload"])), 'wb')
 
-
-                booler = True
-                while (booler):
-                    try:
-                        data, address = sock.recvfrom(4096)
-                        print(f.decrypt)
-                        booler= False
-                    except:
-                        pass
-                try:
-                    while(data):
-                        print("getting file")
-                        file.write(f.decrypt(data))
-                        sock.settimeout(2)
-                        data, address = sock.recvfrom(4096)
-                except:
-                    pass
+                s=socket.socket()
+		s.bind(('0.0.0.0', 10020))
+		s.listen(10)
+		sc, address=s.accept()
+		while True:
+			l=sc.recv(1024)
+			while(l):
+				file.write(l)
+				l=sc.recv(1024)
                 file.close()
+                print("suh")
                 clients[key]["time"] = time.time()
                 for client in clients:
                     for sub in clients[client]["subscriptions"]:
@@ -326,11 +321,11 @@ while True:
                             __location__ = os.path.realpath(
                                 os.path.join(os.getcwd(), os.path.dirname(__file__)))
                             file = open(os.path.join(__location__, f.decrypt(rawData["payload"])), "rb");
-                            data = file.read(1024)
+                            data = file.read(512)
                             while (data):
                                 print("theres data and we send")
                                 if (sock.sendto(f1.encrypt(data), clients[client]["address"])):
-                                    data = file.read(1024)
+                                    data = file.read(512)
                             file.close()
 
 
