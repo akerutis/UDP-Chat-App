@@ -54,10 +54,12 @@ t.start()
 while True:
     print("goin")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('localhost', 10020))
+    sock.bind(('0.0.0.0', 10020))
     print("receicing")
     data, address = sock.recvfrom(4096)
     rawData = pickle.loads(data)
+    print("received")
+    print(rawData)
     sent = False
     timeBool = False
     currKey = None
